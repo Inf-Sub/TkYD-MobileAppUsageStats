@@ -1,17 +1,17 @@
 __author__ = 'InfSub'
 __contact__ = 'ADmin@TkYD.ru'
 __copyright__ = 'Copyright (C) 2024, [LegioNTeaM] InfSub'
-__date__ = '2024/10/04'
+__date__ = '2024/10/19'
 __deprecated__ = False
 __email__ = 'ADmin@TkYD.ru'
 __maintainer__ = 'InfSub'
 __status__ = 'Production'
-__version__ = '2.0.3'
+__version__ = '2.0.4'
 
 
-from os.path import join
-from pathlib import Path
 from datetime import datetime as dt
+
+from app.utils.utils import Path, os_join
 
 # Параметры Git
 # Путь к локальной директории, где хранится скрипт
@@ -27,13 +27,13 @@ REPO_DIR = Path(__file__).parent.parent
 # Наименование директории виртуального окружения
 VENV_DIR_NAME = '.venv'
 # Путь к директории виртуального окружения
-VENV_PATH = join(REPO_DIR, VENV_DIR_NAME)
+VENV_PATH = os_join(REPO_DIR, VENV_DIR_NAME)
 
 # Logs
 LOG_DIR_NAME = 'logs'
 LOG_FILE = dt.now().strftime('logfile_%Y%m%d.log')
-LOG_DIR = join(REPO_DIR, LOG_DIR_NAME)
-LOG_PATH = join(LOG_DIR, LOG_FILE)
+LOG_DIR = os_join(REPO_DIR, LOG_DIR_NAME)
+LOG_PATH = os_join(LOG_DIR, LOG_FILE)
 LOG_LEVEL_CONSOLE = 'INFO'
 LOG_LEVEL_FILE = 'INFO'
 
@@ -45,7 +45,7 @@ Path(LOG_DIR).mkdir(parents=True, exist_ok=True)
 # Наименование директории с данными
 DATA_DIR_NAME = 'data'
 # Путь к директории с данными
-DATA_DIR = join(REPO_DIR, DATA_DIR_NAME)
+DATA_DIR = os_join(REPO_DIR, DATA_DIR_NAME)
 
 # Path(DATA_DIR).mkdir(parents=True, exist_ok=True)
 

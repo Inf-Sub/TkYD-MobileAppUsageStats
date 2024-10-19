@@ -1,42 +1,31 @@
 __author__ = 'InfSub'
 __contact__ = 'ADmin@TkYD.ru'
 __copyright__ = 'Copyright (C) 2024, [LegioNTeaM] InfSub'
-__date__ = '2024/10/13'
+__date__ = '2024/10/19'
 __deprecated__ = False
 __email__ = 'ADmin@TkYD.ru'
 __maintainer__ = 'InfSub'
 __status__ = 'Production'
-__version__ = '2.2.5'
+__version__ = '2.2.10'
 
 
-from typing import Union
-from os import getenv
-from os.path import join, sep as os_sep
-from asyncio import run as async_run, sleep, get_event_loop
-from aiofiles import open as aio_open
+from os.path import sep as os_sep
 from concurrent.futures import ThreadPoolExecutor
-from pathlib import Path
 from fnmatch import fnmatch
-from dotenv import load_dotenv
 from ping3 import ping
 from time import time
 from smbclient import ClientConfig, listdir, open_file
 
-from app.utils.logging_config import logging, setup_logging  # импортируем наш модуль с настройками логгера
+from app.utils.utils import aio_get_event_loop, aio_open, Path, os_join, type_Union, logging
 from app.config import REPO_DIR
 from app.utils.make_dir import make_dir
 
 
-setup_logging()
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)  # Устанавливаем уровень логирования
-
-# Загрузка переменных из .env файла
-load_dotenv()
 
 
 async def async_ping(host: str) -> bool:
-    loop = get_event_loop()
+    loop = aio_get_event_loop()
     with ThreadPoolExecutor() as executor:
         response = await loop.run_in_executor(executor, ping, host)
     return bool(response)
@@ -55,10 +44,10 @@ async def create_network_path_async(server: str, share: str, path: str = '') -> 
 
 async def copy_files(
         network_path: str, file_pattern: str, download_path: str, download_file_name: str, multiple: bool = False
-) -> Union[str, bool]:
+) -> type_Union[str, bool]:
     await make_dir(download_path)
     hostname = network_path.split(os_sep)[2]
-    combined_file_path = join(
+    combined_file_path = os_join(
         download_path, download_file_name + (Path(file_pattern).suffix if multiple else Path(file_pattern).suffix))
 
     try:
@@ -67,7 +56,7 @@ async def copy_files(
         async with aio_open(combined_file_path, mode='wb') as dest_file:
             for entry in dir_entries:
                 if fnmatch(entry, file_pattern):
-                    src_file_path = join(network_path, entry)
+                    src_file_path = os_join(network_path, entry)
 
                     logger.info(f'{hostname}\tCopying "{entry}" to "{Path(combined_file_path).name}"')
 
@@ -106,7 +95,7 @@ class SmbHandler:
 
 
 async def run(server: str, share: str, path: str, username: str, password: str, file_pattern: str, download_path: str,
-              download_file_name: str) -> Union[str, bool]:
+              download_file_name: str) -> type_Union[str, bool]:
     if await async_ping(server):
         logger.info(f'Хост: {server} - доступен. Подключение к сетевой шаре {share} ...')
         network_path = await create_network_path_async(server=server, share=share, path=path)
@@ -128,6 +117,8 @@ async def run(server: str, share: str, path: str, username: str, password: str, 
 
 # Запуск асинхронного скрипта
 if __name__ == "__main__":
+    from app.utils.utils import aio_run, aio_sleep, getenv
+
     SHOPS = getenv('SHOPS').replace(' ', '').split(',')
     SMB_HOSTNAME_TEMPLATE = getenv('SMB_HOSTNAME_TEMPLATE')
     # SMB_PORT = int(getenv('SMB_PORT'))
@@ -136,7 +127,7 @@ if __name__ == "__main__":
     SMB_PATH = getenv('SMB_PATH')
     SMB_USERNAME = getenv('SMB_USERNAME')
     SMB_PASSWORD = getenv('SMB_PASSWORD')
-    LOAD_TO_PATH = join(REPO_DIR, getenv('LOAD_TO_PATH')) + '-async'
+    LOAD_TO_PATH = os_join(REPO_DIR, getenv('LOAD_TO_PATH')) + '-async'
     LOAD_FILE_PATTERN = getenv('LOAD_FILE_PATTERN')
     SMB_SLEEP_INTERVAL = int(getenv('SMB_SLEEP_INTERVAL'))
 
@@ -165,7 +156,7 @@ if __name__ == "__main__":
             i += 1
             print(f'Время выполнения цикла {i}: {end_time - start_time} секунд.')
             print(f'Пауза на: {SMB_SLEEP_INTERVAL} секунд')
-            await sleep(SMB_SLEEP_INTERVAL)
+            await aio_sleep(SMB_SLEEP_INTERVAL)
 
-    async_run(test_run())
+    aio_run(test_run())
 

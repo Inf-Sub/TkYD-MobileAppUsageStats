@@ -11,28 +11,40 @@ __version__ = '2.1.5'
 
 import logging
 import logging.config
-import aiofiles
-import asyncio
 from colorlog import ColoredFormatter
 
+from app.utils.utils import aio_create_task, aio_open
 from app.config import LOG_PATH, LOG_LEVEL_CONSOLE, LOG_LEVEL_FILE
 
 
 class AsyncFileHandler(logging.Handler):
-    def __init__(self, filename):
+    def __init__(self, filename: str):
         logging.Handler.__init__(self)
         self.filename = filename
 
-    async def _write_log(self, message):
-        async with aiofiles.open(self.filename, 'a') as log_file:
+    async def _write_log(self, message: str) -> None:
+        async with aio_open(self.filename, 'a') as log_file:
             await log_file.write(message + '\n')
 
-    def emit(self, record):
+    def emit(self, record) -> None:
         log_entry = self.format(record)
-        asyncio.create_task(self._write_log(log_entry))
+        aio_create_task(self._write_log(log_entry))
 
 
-def setup_logging(log_file=LOG_PATH):
+def lib_to_silence(list_lib: list) -> None:
+    libraries_to_silence = list_lib  # ['smbprotocol', ]
+    for lib in libraries_to_silence:
+        logging.getLogger(lib).setLevel(logging.ERROR)
+
+
+def setup_logging(log_file: str = '', list_silence_lib: list[str] = None) -> None:
+    log_file = log_file if log_file else LOG_PATH
+
+    if list_silence_lib is None:
+        list_silence_lib = []
+
+    lib_to_silence(list_lib=list_silence_lib)
+
     formatter = ColoredFormatter(
         "%(log_color)s%(asctime)s\t\t%(name)s\t%(levelname)s:\t%(message)s",
         datefmt=None,
@@ -99,4 +111,4 @@ def setup_logging(log_file=LOG_PATH):
 
 if __name__ == '__main__':
     # Вызов функции настройки логгера при импорте модуля
-    setup_logging(LOG_PATH)
+    setup_logging(log_file=LOG_PATH, list_silence_lib=['smbprotocol', ])

@@ -10,13 +10,10 @@ __version__ = '2.0.4'
 
 
 from aiofiles.os import makedirs
-from pathlib import Path
-from app.utils.logging_config import logging, setup_logging  # импортируем наш модуль с настройками логгера
+from app.utils.utils import Path, logging
 
 
-setup_logging()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)  # Устанавливаем уровень логирования
 
 
 async def make_dir(directory: str) -> None:

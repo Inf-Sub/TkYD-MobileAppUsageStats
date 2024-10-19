@@ -10,17 +10,13 @@ __version__ = '0.5.1'
 
 
 from os import listdir
-from os.path import join, splitext
-import asyncio
+from os.path import splitext
 import aiomysql
-from aiofiles import open as async_open
 from json import loads as json_loads
-from pathlib import Path
 
-from app.utils.logging_config import logging, setup_logging
+from app.utils.utils import aio_get_event_loop, aio_open, Path, os_join, logging
 
 
-setup_logging()
 logger = logging.getLogger(__name__)
 
 
@@ -56,11 +52,11 @@ class DatabaseManager:
 
     async def create_tables(self) -> None:
         async with self.conn.cursor() as cur:
-            schema_json_path = str(join(self.schema_dir, self.schema_json))
+            schema_json_path = str(os_join(self.schema_dir, self.schema_json))
 
             if Path(schema_json_path).exists():
                 # Загрузка порядка файлов из JSON
-                async with async_open(schema_json_path, 'r', encoding='utf-8') as f:
+                async with aio_open(schema_json_path, 'r', encoding='utf-8') as f:
                     content = await f.read()
                     schema_files_info = json_loads(content)
             else:
@@ -88,7 +84,7 @@ class DatabaseManager:
         for filename in order:
             table_name = splitext(filename)[0].replace('schema_', '')
 
-            async with async_open(join(self.schema_dir, filename), 'r', encoding='utf-8') as f:
+            async with aio_open(os_join(self.schema_dir, filename), 'r', encoding='utf-8') as f:
                 content = await f.read()
                 tables[table_name] = content
         return tables
@@ -108,10 +104,10 @@ class DatabaseManager:
             return True
 
     async def _load_initial_data(self, cur, table, data_file) -> None:
-        data_path = str(join(self.schema_dir, data_file))
+        data_path = str(os_join(self.schema_dir, data_file))
 
         if Path(data_path).exists():
-            async with async_open(data_path, 'r', encoding='utf-8') as f:
+            async with aio_open(data_path, 'r', encoding='utf-8') as f:
                 data_content = await f.read()
                 data = json_loads(data_content)
                 for item in data:
@@ -143,7 +139,7 @@ class DatabaseManager:
 
 
 async def main():
-    loop = asyncio.get_event_loop()
+    loop = aio_get_event_loop()
     db_manager = DatabaseManager(
         host=DB_HOST, port=DB_PORT, database=DB_NAME, user=DB_USERNAME, password=DB_PASSWORD,
         schema_dir=DATA_DIR, schema_json=DB_INIT_SCHEMAS)
@@ -156,14 +152,8 @@ async def main():
 
 
 if __name__ == '__main__':
-    # from os.path import join
-    from os import getenv
-    from dotenv import load_dotenv
-
+    from app.utils.utils import aio_run, getenv
     from app.config import DATA_DIR
-
-    # Загрузка переменных из .env файла
-    load_dotenv()
 
     DB_HOST = getenv('DB_HOST')
     DB_PORT = int(getenv('DB_PORT'))
@@ -171,8 +161,8 @@ if __name__ == '__main__':
     DB_USERNAME = getenv('DB_USERNAME')
     DB_PASSWORD = getenv('DB_PASSWORD')
 
-    # DB_INIT_DATA_CITIES_PATH = join(DATA_DIR, getenv('DB_INIT_DATA_CITIES_FILE_PATH'))
-    # DB_INIT_DATA_STORES_PATH = join(DATA_DIR, getenv('DB_INIT_DATA_STORES_FILE_PATH'))
+    # DB_INIT_DATA_CITIES_PATH = os_join(DATA_DIR, getenv('DB_INIT_DATA_CITIES_FILE_PATH'))
+    # DB_INIT_DATA_STORES_PATH = os_join(DATA_DIR, getenv('DB_INIT_DATA_STORES_FILE_PATH'))
     DB_INIT_SCHEMAS = getenv('DB_INIT_SCHEMAS')
 
-    asyncio.run(main())
+    aio_run(main())
